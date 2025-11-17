@@ -78,7 +78,6 @@ const connectToDatabase = async () => {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       bufferCommands: false,
-      bufferMaxEntries: 0,
       maxIdleTimeMS: 30000,
       retryWrites: true,
       retryReads: true,
