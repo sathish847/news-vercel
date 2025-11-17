@@ -126,6 +126,7 @@ miniNewsSchema.pre('findOneAndUpdate', function(next) {
 
 // Index for better query performance
 miniNewsSchema.index({ category: 1, isActive: 1, createdAt: -1 });
+miniNewsSchema.index({ isActive: 1, createdAt: -1 }); // Optimized for getAllMiniNews query
 miniNewsSchema.index({ slug: 1 });
 
 module.exports = mongoose.model('MiniNews', miniNewsSchema);

@@ -16,29 +16,43 @@ This document provides comprehensive information about the MiniNews API endpoint
 ## Endpoints
 
 ### 1. Get All MiniNews (Public)
-**GET** `{{base_url}}/api/mini_news/public`
+**GET** `{{base_url}}/api/mini_news/public?page=1&limit=20`
 
 **Authentication**: None required
+
+**Query Parameters**:
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20, max: 100)
 
 **Response**:
 ```json
 {
   "success": true,
-  "count": 10,
+  "count": 20,
+  "total": 150,
+  "page": 1,
+  "totalPages": 8,
   "data": [...]
 }
 ```
 
 ### 2. Get MiniNews by Category (Public)
-**GET** `{{base_url}}/api/mini_news/category/{{categoryId}}`
+**GET** `{{base_url}}/api/mini_news/category/{{categoryId}}?page=1&limit=20`
 
 **Authentication**: None required
+
+**Query Parameters**:
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20, max: 100)
 
 **Response**:
 ```json
 {
   "success": true,
-  "count": 5,
+  "count": 20,
+  "total": 45,
+  "page": 1,
+  "totalPages": 3,
   "data": [...]
 }
 ```

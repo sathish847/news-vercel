@@ -22,14 +22,29 @@ const upload = multer({
 // Export multer middleware for use in routes
 const uploadFields = upload.any();
 
-// Get all mini news articles
+// Get all mini news articles with pagination
 const getAllMiniNews = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; // Default 20 items per page
+    const skip = (page - 1) * limit;
+
+    // Add timeout and lean() for better performance
     const miniNews = await MiniNews.find({ isActive: true })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .maxTimeMS(8000) // 8 second timeout for Vercel
+      .lean(); // Use lean() for better performance
+
+    const total = await MiniNews.countDocuments({ isActive: true });
+
     res.json({
       success: true,
       count: miniNews.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       data: miniNews
     });
   } catch (error) {
@@ -83,17 +98,34 @@ const getMiniNews = async (req, res) => {
   }
 };
 
-// Get mini news by category
+// Get mini news by category with pagination
 const getMiniNewsByCategory = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
     const miniNews = await MiniNews.find({
       category: req.params.categoryId,
       isActive: true
     })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .maxTimeMS(8000)
+      .lean();
+
+    const total = await MiniNews.countDocuments({
+      category: req.params.categoryId,
+      isActive: true
+    });
+
     res.json({
       success: true,
       count: miniNews.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       data: miniNews
     });
   } catch (error) {
