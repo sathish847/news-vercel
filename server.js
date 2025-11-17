@@ -66,8 +66,45 @@ const connectDB = async () => {
   }
 };
 
-// Initialize database connection
-connectDB();
+// For Vercel serverless functions, connect to DB on each request
+let isConnected = false;
+
+const connectToDatabase = async () => {
+  if (isConnected) return;
+
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/express-backend', {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false,
+      bufferMaxEntries: 0,
+      maxIdleTimeMS: 30000,
+      retryWrites: true,
+      retryReads: true,
+    });
+    isConnected = true;
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+};
+
+// Middleware to connect to database
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+});
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -85,7 +122,8 @@ app.get('/', (req, res) => {
   res.json({
     message: 'Welcome to Express Backend API',
     secure: req.secure,
-    protocol: req.protocol
+    protocol: req.protocol,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -104,7 +142,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    secure: req.secure
+    secure: req.secure,
+    mongodb: isConnected ? 'connected' : 'disconnected'
   });
 });
 
@@ -126,33 +165,5 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start HTTP server
-const httpServer = http.createServer(app);
-httpServer.listen(PORT, () => {
-  console.log(`HTTP Server is running on port ${PORT}`);
-});
-
-// Start HTTPS server (if certificates exist)
-try {
-  const sslKeyPath = path.join(__dirname, 'ssl', 'key.pem');
-  const sslCertPath = path.join(__dirname, 'ssl', 'cert.pem');
-
-  if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
-    const sslOptions = {
-      key: fs.readFileSync(sslKeyPath),
-      cert: fs.readFileSync(sslCertPath),
-    };
-
-    const httpsServer = https.createServer(sslOptions, app);
-    httpsServer.listen(HTTPS_PORT, () => {
-      console.log(`HTTPS Server is running on port ${HTTPS_PORT}`);
-    });
-  } else {
-    console.log('SSL certificates not found. HTTPS server not started.');
-    console.log('To enable HTTPS, place key.pem and cert.pem in the ssl/ directory');
-  }
-} catch (error) {
-  console.error('Error starting HTTPS server:', error.message);
-}
-
+// Export the Express app for Vercel
 module.exports = app;
